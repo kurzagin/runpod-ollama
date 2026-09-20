@@ -1,0 +1,36 @@
+# Fallback/default Caddyfile template
+# Note: start.sh dynamically generates /etc/caddy/Caddyfile on container boot
+# based on whether DOMAIN is specified (MODE A) or not (MODE B: internal self-signed TLS).
+
+{
+	admin off
+	persist_config off
+	auto_https disable_redirects
+	log {
+		output stdout
+		format console
+		level WARN
+	}
+}
+
+:8443 {
+	@unauthorized {
+		not header Authorization "Bearer {$API_KEY}"
+	}
+	respond @unauthorized "Unauthorized: Invalid or missing API key" 401 {
+		close
+	}
+
+	reverse_proxy 127.0.0.1:11434 {
+		flush_interval -1
+		buffer_requests false
+		buffer_responses false
+
+		transport http {
+			response_header_timeout 600s
+			dial_timeout 10s
+		}
+	}
+
+	tls internal
+}

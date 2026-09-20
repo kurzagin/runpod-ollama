@@ -1,0 +1,35 @@
+services:
+  runpod-ollama:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: runpod-ollama:latest
+    container_name: runpod-ollama
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      # Maps host port 8443 directly to Caddy's internal TLS port
+      - "8443:8443"
+    volumes:
+      # Persistent storage for Ollama model weights and blobs
+      - ollama_data:/root/.ollama
+      # Persistent storage for Caddy certificates and ACME state
+      - caddy_data:/data
+      - caddy_config:/config
+    # Enable NVIDIA GPU support when running locally with NVIDIA Container Toolkit
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  ollama_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
